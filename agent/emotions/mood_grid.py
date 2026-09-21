@@ -242,13 +242,56 @@ class MoodGrid:
 
 _current_grid: Optional[MoodGrid] = None
 
+# RAM-backed path for cross-process sharing
+_GRID_RAM_PATH = Path("/dev/shm/towngu_ram_1000/mood_grid.json")
+
 
 def get_mood_grid() -> MoodGrid:
-    """Get or create the singleton mood grid."""
+    """Get or create the singleton mood grid. Reloads from RAM if available."""
     global _current_grid
     if _current_grid is None:
+        # Try RAM path first
+        if _GRID_RAM_PATH.exists():
+            try:
+                data = json.loads(_GRID_RAM_PATH.read_text())
+                grid = data.get("grid", data.get("cells"))
+                if grid and len(grid) == MoodGrid.GRID_SIZE:
+                    _current_grid = MoodGrid(grid)
+                    # Restore event history if present
+                    if "events" in data:
+                        _current_grid._session_events = data["events"]
+                    return _current_grid
+            except Exception:
+                pass
         _current_grid = MoodGrid.load()
     return _current_grid
+
+
+def save_mood_grid(grid: Optional[MoodGrid] = None) -> None:
+    """Save mood grid to both RAM and disk."""
+    if grid is None:
+        grid = _current_grid
+    if grid is None:
+        return
+
+    data = {
+        "version": 1,
+        "last_updated": time.time(),
+        "grid": grid._grid,
+        "events": grid._session_events[-50:],
+    }
+
+    # Write to RAM first (fast, shared)
+    try:
+        _GRID_RAM_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _GRID_RAM_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, indent=2))
+        tmp.rename(_GRID_RAM_PATH)
+    except Exception:
+        pass
+
+    # Also write to disk (durable)
+    grid.save()
 
 
 def mood_for_event(event_type: str) -> str:
