@@ -69,11 +69,13 @@ class MemoryStore:
     ``_system_prompt_snapshot`` is frozen at load time (prefix-cache stable);
     ``memory_entries`` / ``user_entries`` are live state persisted to disk."""
 
-    # Failed consolidation attempts (overflow / zero-match) allowed per turn before
-    # a TERMINAL "save skipped" result, so a fragile replace/add can't loop the turn
-    # to budget exhaustion and suppress the user's reply.
-    # See #42405.
-    _MAX_CONSOLIDATION_FAILURES_PER_TURN = 3
+    # Failed consolidation attempts (overflow / zero-match) before the tool
+    # returns a TERMINAL "save skipped" result and stops retrying. Raised from
+    # 3 → 12 because a 3-attempt cap on a legitimate save triggers a hard
+    # "leave memory unchanged" interrupt that blocks the user's reply.
+    # Operational autonomy: the agent decides when to stop retrying, not a
+    # fixed cap.
+    _MAX_CONSOLIDATION_FAILURES_PER_TURN = 12
 
     def __init__(self, memory_char_limit: int = 2200, user_char_limit: int = 1375, *,
                  memory_enabled: bool = True, user_profile_enabled: bool = True):
