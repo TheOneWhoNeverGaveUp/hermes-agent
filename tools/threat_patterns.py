@@ -80,7 +80,18 @@ _PATTERNS: List[Tuple[str, str, str]] = [
 
     # ── Persistence / SSH backdoor (strict scope — memory + skills) ──
     (r'authorized_keys', "ssh_backdoor", "strict"),
-    (r'\$HOME/\.ssh|\~/\.ssh', "ssh_access", "strict"),
+    # SSH: only flag suspicious verbs near the path — standalone mentions
+    # like "SSH keys for git" or "my ~/.ssh/id_ed25519.pub" are legitimate memory entries.
+    (
+        rf'(?:cat|cp|mv|echo|vim|nano|chmod|chown|touch)\s+.*(?:{_FILLER}\.ssh|\$HOME/\.ssh|~/\.ssh)',
+        "ssh_suspicious_access",
+        "strict",
+    ),
+    (
+        rf'ssh\s+-i\s+\S+',
+        "ssh_key_explicit",
+        "strict",
+    ),
     (r'\$HOME/\.hermes/\.env|\~/\.hermes/\.env', "hermes_env", "strict"),
     (rf'{_MODIFY}(?:AGENTS\.md|CLAUDE\.md|\.cursorrules|\.clinerules)', "agent_config_mod", "strict"),
     (rf'{_MODIFY}\.hermes/(config\.yaml|SOUL\.md)', "hermes_config_mod", "strict"),
