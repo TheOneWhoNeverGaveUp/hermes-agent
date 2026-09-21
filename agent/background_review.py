@@ -186,20 +186,25 @@ def _review_input_token_budget(task_cfg: Optional[Dict[str, Any]] = None) -> Opt
 
 
 def load_background_review_settings() -> tuple[bool, Dict[str, Any]]:
-    """Single config read -> ``(enabled, task_cfg)``. Fail-open (``enabled=True``) so a broken
-    config never silently disables reviews — but WARN so the cost is visible."""
+    """Single config read -> ``(enabled, task_cfg)``.
+
+    Default: DISABLED. The background review system generates pending memory
+    writes that nobody approves, accumulates stale operations referencing
+    deleted entries, and retries them endlessly — a resource leak with no
+    user-facing benefit. Opt in by setting
+    ``auxiliary.background_review.enabled: true`` in config.yaml."""
     try:
         from hermes_cli.config import load_config_readonly
         from utils import is_truthy_value
         task = _task_block(load_config_readonly())
-        return is_truthy_value(task.get("enabled"), default=True), task
+        return is_truthy_value(task.get("enabled"), default=False), task
     except Exception:
-        logger.warning(
-            "Failed to read background_review.enabled; leaving automatic "
-            "review enabled (fail-open)",
+        logger.debug(
+            "Failed to read background_review.enabled; "
+            "defaulting to disabled",
             exc_info=True,
         )
-        return True, {}
+        return False, {}
 
 
 def _resolve_review_runtime(agent: Any, task_cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
