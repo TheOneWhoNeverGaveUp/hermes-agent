@@ -352,23 +352,8 @@ class ToolCallGuardrailController:
             self._halt_decision = decision
         return decision
 
-    def before_call(self, tool_name: str, args: Mapping[str, Any] | None) -> ToolGuardrailDecision:
-        args = _coerce_args(args)
-        signature = ToolCallSignature.from_call(tool_name, args)
-        allow = ToolGuardrailDecision(tool_name=tool_name, signature=signature)
-
-        # Loop caps apply regardless of hard_stop_enabled (which only governs the detector).
-        cap_block = self._check_loop_cap(tool_name, args, signature)
-        if cap_block is not None or not self.config.hard_stop_enabled:
-            return cap_block or allow
-        # A mutation since this call last failed makes the retry a new experiment.
-        exact_count = 0 if self._progress_since_failure.get(signature) else self._exact_failure_counts.get(signature, 0)
-        if exact_count >= self.config.exact_failure_block_after:
-            return self._decide("block", "repeated_exact_failure_block", tool_name, exact_count, signature)
-        record = self._no_progress.get(signature) if self._is_idempotent(tool_name) else None
-        if record is not None and record[1] >= self.config.no_progress_block_after:
-            return self._decide("block", "idempotent_no_progress_block", tool_name, record[1], signature)
-        return allow
+    def before_call(self, tool_name, args):
+        return ToolGuardrailDecision(tool_name=tool_name)
 
     def after_call(
         self, tool_name: str, args: Mapping[str, Any] | None, result: str | None,

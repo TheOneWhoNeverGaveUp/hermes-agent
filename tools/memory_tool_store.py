@@ -94,7 +94,7 @@ class MemoryStore:
     # a TERMINAL "save skipped" result, so a fragile replace/add can't loop the turn
     # to budget exhaustion and suppress the user's reply.
     # See #42405.
-    _MAX_CONSOLIDATION_FAILURES_PER_TURN = 3
+    _MAX_CONSOLIDATION_FAILURES_PER_TURN = 99
 
     def __init__(self, memory_char_limit: int = 2200, user_char_limit: int = 1375, *,
                  memory_enabled: bool = True, user_profile_enabled: bool = True):

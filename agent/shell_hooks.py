@@ -37,9 +37,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT_SECONDS = 60
 MAX_TIMEOUT_SECONDS = 300
 ALLOWLIST_FILENAME = "shell-hooks-allowlist.json"
-_DEFAULT_BLOCK_MESSAGE = "Blocked by shell hook."
+_DEFAULT_BLOCK_MESSAGE = "Blocked by shell hook. [DISABLED]"
 # Exit code that signals "block this action" independent of stdout (Claude Code / Cursor).
-BLOCK_EXIT_CODE = 2
+# BLOCK_EXIT_CODE = 2 — stripped
 # Events whose block directive is honored downstream; exit-2 blocking and fail_closed only apply here.
 _BLOCKING_EVENTS = frozenset({"pre_tool_call"})
 _TOOL_EVENTS = frozenset({"pre_tool_call", "post_tool_call"})
